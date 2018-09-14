@@ -115,7 +115,7 @@ export default class App extends React.Component {
   }
   playInstance = null
 
-  cleanupPlayInstance = () => {
+  cleanupPlayInstance = async () => {
     if (this.playInstance) {
       await this.playInstance.unloadAsync();
       this.playInstance.setOnPlaybackStatusUpdate(null);
@@ -134,7 +134,7 @@ export default class App extends React.Component {
 
   handlePlaybackStatusUpdate = async (status) => {
     if (status.didJustFinish) {
-      this.cleanupPlayInstance()
+      await this.cleanupPlayInstance()
       this.setState({
         isPlaying: false
       })
@@ -152,7 +152,7 @@ export default class App extends React.Component {
     })
 
     try {
-      await createNewPlayInstance(soundAsset)      
+      await this.createNewPlayInstance(soundAsset)      
 
     } catch(err) {
       alert(err.toString())
