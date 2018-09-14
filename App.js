@@ -107,82 +107,82 @@ const RiscoButton = ({
   </TouchableOpacity>
 )
 
-const playOnce = (soundAsset) => new Promise(async (resolve, reject) => {
-  try {
+
+export default class App extends React.Component {
+  state = {
+    isPlaying: false,
+    isDevil: false,
+  }
+  playInstance = null
+
+  cleanupPlayInstance = () => {
+    if (this.playInstance) {
+      await this.playInstance.unloadAsync();
+      this.playInstance.setOnPlaybackStatusUpdate(null);
+      this.playInstance = null;
+    }
+  }
+
+  createNewPlayInstance = async (soundAsset) => {
     const { sound: soundObject } = await Expo.Audio.Sound.create(
       soundAsset,
       { shouldPlay: true }
     );
-    soundObject.setOnPlaybackStatusUpdate((status) => {
-      if (status.playableDurationMillis === status.positionMillis) {
-        resolve()
-      }
-    })
-  } catch (error) {
-    reject(error)
+    soundObject.setOnPlaybackStatusUpdate(this.handlePlaybackStatusUpdate)
+    this.playInstance = soundObject
   }
-})
-export default class App extends React.Component {
-  state = {
-    isPlaying: false
-  }
-  play = (soundAsset, isDevil = false) => async () => {
-    if (this.state.isPlaying) {
-      return
-    }
-    this.setState({
-      isPlaying: true,
-      isDevil
-    })
-    try {
-      await playOnce(soundAsset)
-    } catch(err) {
-      alert(err.toString())
-    } finally {
+
+  handlePlaybackStatusUpdate = async (status) => {
+    if (status.didJustFinish) {
+      this.cleanupPlayInstance()
       this.setState({
         isPlaying: false
       })
     }
-    
   }
-  // belessa: require(`./assets/belessa.wav`),
-  // design: require(`./assets/design.wav`),
-  // framework: require(`./assets/framework.wav`),
-  // objecto: require(`./assets/objecto.wav`),
-  // pla: require(`./assets/pla.wav`),
-  // requisitoNoFuncional: require(`./assets/requisito-no-funcional.wav`),
-  // segurancaComunicacao: require(`./assets/seguranca-comunicacao.wav`),
-  // segurancaDaTelaDevil: require(`./assets/seguranca-da-tela-devil.wav`),
-  // segurancaDaTela: require(`./assets/seguranca-da-tela.wav`),
-  // segurancaDeDados: require(`./assets/seguranca-de-dados.wav`),
-  // segurancaLogicaNegocio: require(`./assets/seguranca-logica-negocio.wav`),
-  // taBomBelessa: require(`./assets/ta-bom-belessa.wav`),
-  // tenico: require(`./assets/tenico.wav`),
+
+  play = (soundAsset, isDevil = false) => async () => {
+    if (this.state.isPlaying) {
+      return
+    }
+
+    this.setState({
+      isPlaying: true,
+      isDevil
+    })
+
+    try {
+      await createNewPlayInstance(soundAsset)      
+
+    } catch(err) {
+      alert(err.toString())
+      this.setState({
+        isPlaying: false
+      })
+    }
+  }
   render() {
     return (
       <View style={styles.container}>
         <ScrollView>
           {pairs && pairs.map((pair, i) => (
             <Row key={i}>
+              <Cell backgroundColor={i % 2 === 0 ? 'tomato' : 'steelblue'}>
               {pair[0] && (
-                <Cell backgroundColor={i % 2 === 0 ? 'tomato' : 'steelblue'}>
-                  <RiscoButton onPress={this.play(pair[0].sound, pair[0].isDevil)} />
-                </Cell>
+                <RiscoButton onPress={this.play(pair[0].sound, pair[0].isDevil)} />
               )}
-              {pair[1] ? (
-                <Cell backgroundColor={i % 2 !== 0 ? 'tomato' : 'steelblue'}>
+              </Cell>
+              
+              <Cell backgroundColor={i % 2 !== 0 ? 'tomato' : 'steelblue'}>
+                {pair[1] && (
                   <RiscoButton onPress={this.play(pair[1].sound, pair[1].isDevil)} />
-                </Cell>
-              ) : (
-                <Cell backgroundColor={i % 2 !== 0 ? 'tomato' : 'steelblue'}>
-                  
-                </Cell>
-              )}
+                )}
+              </Cell>
             </Row>
           ))}
-        
-      </ScrollView> 
-        {this.state.isPlaying && <Image
+        </ScrollView> 
+        {this.state.isPlaying && (
+          <Image
             style={{
               left: 0,
               top: 0,
@@ -197,7 +197,8 @@ export default class App extends React.Component {
               ? 'https://conferenciaasrconsultoria.files.wordpress.com/2013/09/jorge_risco2-e1379538353898.jpg'
               : 'https://i1.rgstatic.net/ii/profile.image/624346691301378-1525867259473_Q512/Jorge_Becerra11.jpg'
             }}
-          />}
+          />
+        )}
       </View>
     );
   }
